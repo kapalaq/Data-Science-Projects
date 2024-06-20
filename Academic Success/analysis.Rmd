@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 # Libraries Including
 
-```{r, echo=TRUE, message=FALSE}
+```{r libraries, echo=TRUE, message=FALSE}
 library(readr)
 library(ggplot2)
 library(tidyverse)
@@ -33,7 +33,7 @@ head(df)
 
 ## Unique values in columns
 
-```{r}
+```{r unique}
 unique_values <- data.frame(sapply(df, FUN = function(x) length(unique(x))))
 names(unique_values) <- c("Num of Unique values")
 print(unique_values)
@@ -51,7 +51,7 @@ features <- setdiff(colnames(df), c("id", "Target"))
 
 ## Defining funtion
 
-```{r, warning=TRUE, echo=TRUE}
+```{r chisqr, warning=TRUE, echo=TRUE}
 chisqr <- function(df, x) {
   tbl <- table(df[[x]], as.factor(df[["Target"]]))
   xsq <- chisq.test(tbl)
@@ -61,7 +61,7 @@ chisqr <- function(df, x) {
 
 ## Applying Chi-squared
 
-```{r, warning=FALSE, echo=TRUE}
+```{r test_applied, warning=FALSE, echo=TRUE}
 results <- lapply(features, function(x) as.vector(chisqr(df, x)))
 ```
 
@@ -69,21 +69,30 @@ results <- lapply(features, function(x) as.vector(chisqr(df, x)))
 
 ## Converting results in DataFrame
 
-```{r}
+```{r results}
 results_df <- as.data.frame(list_transpose(results), col.names=c("Chi-squared", "Degree of Freedom", "p-value", "CramerV"), row.names=features)
 results_df$`Degree.of.Freedom` <- sapply(results_df$`Degree.of.Freedom`, function(x) min(x / 2, 2))
-print(results_df)
+print(head(results_df))
 ```
   _Note: Cramer's Value is taken into account since Chi-Squared values and their corresponding values could be calculated incorrectly._
 
 
 ## Correlated features based on Cramer's V test and p-value
 
-```{r}
-results_df |> filter(Chi.squared > 18.34 & p.value < 0.05 & ((CramerV >= 0.3 & Degree.of.Freedom == 1) | (CramerV >= 0.21 & Degree.of.Freedom == 2)))
+```{r cleaning}
+cleaned_df <- results_df |> filter(Chi.squared > 18.34 & p.value < 0.05 & ((CramerV >= 0.3 & Degree.of.Freedom == 1) | (CramerV >= 0.21 & Degree.of.Freedom == 2)))
+print(cleaned_df)
 ```
 
   After applying Cramer's V test and p-value test on values we calculated before, we have a list of features that has a significant effect on Target. This will be used for the Machine Learning Model's convenience.
+
+## Saving data
   
+```{r save}
+filepath <- file.path(getwd(), "/data/train_cleaned.csv")
+write.csv(df[, c("id", rownames(cleaned_df), "Target")], filepath)
+```
+  
+
 # Important Note
   Since the number of significance tests conducted and visualizations investigated is extremely low, in addition to primary Machine Learning Model, another model with Recursive Feature Elimination will be composed. Performances will be compared to find the best fitting Model.
