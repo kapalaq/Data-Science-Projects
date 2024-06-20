@@ -1,0 +1,89 @@
+---
+title: "Academic Success dataset exploration"
+author: "Ruslan Nagimov"
+date: "2024-06-19"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Libraries Including
+
+```{r, echo=TRUE, message=FALSE}
+library(readr)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(vcd)
+```
+
+# Data Exploration
+
+## Data Loading
+
+```{r load, message=FALSE}
+filepath <- "./data/train.csv"
+df <- read_csv(filepath)
+
+head(df)
+```
+
+## Unique values in columns
+
+```{r}
+unique_values <- data.frame(sapply(df, FUN = function(x) length(unique(x))))
+names(unique_values) <- c("Num of Unique values")
+print(unique_values)
+```
+
+  **Since all features found to have less than 5% of unique values, all of them will be treated as an ordinal or categorical. Thus, Chi-squared test can be applied directly**
+
+# Chi-squared test
+
+## Getting features
+
+```{r features}
+features <- setdiff(colnames(df), c("id", "Target"))
+```
+
+## Defining funtion
+
+```{r, warning=TRUE, echo=TRUE}
+chisqr <- function(df, x) {
+  tbl <- table(df[[x]], as.factor(df[["Target"]]))
+  xsq <- chisq.test(tbl)
+  return(c(xsq$statistic, xsq$parameter, xsq$p.value, assocstats(tbl)$cramer))
+}
+```
+
+## Applying Chi-squared
+
+```{r, warning=FALSE, echo=TRUE}
+results <- lapply(features, function(x) as.vector(chisqr(df, x)))
+```
+
+  **As a result, vector of Chi-Squared, Degree of Freedom, p-value and Cramer's V produced for each feature ~ target pair**
+
+## Converting results in DataFrame
+
+```{r}
+results_df <- as.data.frame(list_transpose(results), col.names=c("Chi-squared", "Degree of Freedom", "p-value", "CramerV"), row.names=features)
+results_df$`Degree.of.Freedom` <- sapply(results_df$`Degree.of.Freedom`, function(x) min(x / 2, 2))
+print(results_df)
+```
+  _Note: Cramer's Value is taken into account since Chi-Squared values and their corresponding values could be calculated incorrectly._
+
+
+## Correlated features based on Cramer's V test and p-value
+
+```{r}
+results_df |> filter(Chi.squared > 18.34 & p.value < 0.05 & ((CramerV >= 0.3 & Degree.of.Freedom == 1) | (CramerV >= 0.21 & Degree.of.Freedom == 2)))
+```
+
+  After applying Cramer's V test and p-value test on values we calculated before, we have a list of features that has a significant effect on Target. This will be used for the Machine Learning Model's convenience.
+  
+# Important Note
+  Since the number of significance tests conducted and visualizations investigated is extremely low, in addition to primary Machine Learning Model, another model with Recursive Feature Elimination will be composed. Performances will be compared to find the best fitting Model.
