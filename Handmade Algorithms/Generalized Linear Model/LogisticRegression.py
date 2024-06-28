@@ -7,10 +7,11 @@ from sklearn.preprocessing import StandardScaler
 
 class LogisticRegression:
 
-    def __init__(self, learning_rate=0.01, batch_size=10, epochs=1000):
+    def __init__(self, learning_rate=0.01, batch_size=10, epochs=1000, tolerance=1e-5):
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.batch_size = batch_size
+        self.tolerance = tolerance
         self.weights = np.array([])
 
     def schedule(self, epoch):
@@ -41,14 +42,14 @@ class LogisticRegression:
                 predictions = self.predict(x[j: j + self.batch_size])
                 gradient = self.gradient(x[j: j + self.batch_size], y[j: j + self.batch_size], predictions.flatten())
                 step_size = self.learning_rate * gradient
-                if all(abs(step_size) < 1e-5):
+                if np.all(abs(step_size) < self.tolerance):
                     break
                 self.weights += step_size
                 self.learning_rate = self.schedule(i)
 
 
 if __name__ == '__main__':
-    logregressor = LogisticRegression(0.1, 5, 1000)
+    logregressor = LogisticRegression(0.1, 5, 1000, 1e-6)
     x, y = make_classification(
         n_samples=1000,
         n_features=10,

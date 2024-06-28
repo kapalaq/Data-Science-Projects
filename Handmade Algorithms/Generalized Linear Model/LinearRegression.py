@@ -33,7 +33,7 @@ class LinearRegression:
             for i in range(0, x.shape[0] - self.batch_size + 1, self.batch_size):
                 gradient = self.mini_batch_gradient(x[i: i + self.batch_size], y[i: i + self.batch_size])
                 step_size = self.learning_rate * gradient
-                if all(abs(step_size) < self.tolerance):
+                if np.all(abs(step_size) < self.tolerance):
                     break
                 self.weights -= step_size
 
