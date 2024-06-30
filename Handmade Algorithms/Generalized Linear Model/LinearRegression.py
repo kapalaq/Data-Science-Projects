@@ -2,28 +2,28 @@ import numpy as np
 from sklearn.datasets import make_regression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.linear_model import LinearRegression
 
 
+class MyLinearRegression:
 
-class LinearRegression:
-
-    def __init__(self, learning_rate=0.001, batch_size=10, tolerance = 1e-5):
+    def __init__(self, learning_rate: float = 0.001, batch_size: int = 10, tolerance: float = 1e-5):
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.tolerance = tolerance
         self.weights = np.array([])
 
-    def predict(self, x):
+    def predict(self, x: np.array) -> np.array:
         if x.shape[1] < self.weights.shape[0]:
             x = np.concatenate((np.ones(shape=(x.shape[0], 1)), x), axis=1)
         y_pred = x.dot(self.weights)
         return y_pred
 
-    def mini_batch_gradient(self, x, y):
-        gm = (1 / len(y)) * x.T.dot(self.predict(x) - y)
+    def mini_batch_gradient(self, x: np.array, y: np.array) -> np.array:
+        gm = (2 / len(y)) * x.T.dot(self.predict(x) - y)
         return gm
 
-    def fit(self, x, y):
+    def fit(self, x: np.array, y: np.array):
         if self.batch_size > x.shape[0]:
             self.batch_size = x.shape[0]
         x = np.concatenate((np.ones(shape=(x.shape[0], 1)), x), axis=1)
@@ -39,7 +39,7 @@ class LinearRegression:
 
 
 if __name__ == '__main__':
-    linregressor = LinearRegression(0.01, 10, 1e-5)
+    linregressor = MyLinearRegression(0.1, 5, 1e-14)
     x, y = make_regression(
         n_samples=1000,
         n_features=10,
@@ -50,8 +50,17 @@ if __name__ == '__main__':
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=42)
     linregressor.fit(x_train, y_train)
     y_pred = linregressor.predict(x_test)
-    print("Predicted - Actual")
-    for i in range(len(y_test)):
-        print("\t%.3f" % (y_pred[i] - y_test[i]))
+
+    print("+---------My model------+")
     print("MSE: %.10f" % mean_squared_error(y_test, y_pred))
     print("R-squared: %.10f" % r2_score(y_test, y_pred))
+
+    model = LinearRegression()
+    model.fit(x_train, y_train)
+    y_predic = model.predict(x_test)
+
+    print("\n+----Sklearn model----+")
+    print("MSE: %.10f" % mean_squared_error(y_test, y_predic))
+    print("R-squared: %.10f" % r2_score(y_test, y_predic))
+
+
