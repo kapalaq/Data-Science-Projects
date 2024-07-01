@@ -8,9 +8,10 @@ from sklearn.tree import DecisionTreeClassifier
 
 class MyDecisionTreeClassifier:
 
-    def __init__(self, max_depth: int = 5, min_split: int = 2):
+    def __init__(self, max_depth: int = 5, min_split: int = 2, feature_names: list = None):
         self.max_depth = max_depth
         self.min_split = min_split
+        self.feature_names = feature_names
         self._tree = None
 
     def fit(self, x: np.array, y: np.array) -> None:
@@ -18,6 +19,9 @@ class MyDecisionTreeClassifier:
 
     def predict(self, x: np.array):
         return np.array([self._predict(row, self._tree) for row in x])
+
+    def print(self):
+        self._print(self._tree, self.feature_names)
 
     def _gini(self, y: np.array) -> float:
         n = y.shape[0]
@@ -37,17 +41,18 @@ class MyDecisionTreeClassifier:
         curr_impurity = self._gini(y)
 
         for feature in range(n_features):
-            categories = np.unique(x[:, feature])
 
-            for value in categories:
+            for i in range(1, n_rows):
                 cat = False
                 # Categorical
-                if isinstance(value, str) or len(categories) == 2:
+                if isinstance(x[i, feature], str) or len(np.unique(x[:, feature])) == 2:
+                    value = x[i, feature]
                     left = x[:, feature] == value
                     right = x[:, feature] != value
                     cat = True
                 # Numerical
                 else:
+                    value = (x[i, feature] + x[i - 1, feature]) / 2
                     left = x[:, feature] <= value
                     right = x[:, feature] > value
 
@@ -110,10 +115,8 @@ class MyDecisionTreeClassifier:
                 else:
                     return self._predict(row, tree["right"])
 
-    def print_tree(self, tree=None, feature_names=None, depth=0):
-        if tree is None:
-            return self.print_tree(self._tree, feature_names)
-        elif tree["leaf"]:
+    def _print(self, tree: dict = None, feature_names: list = None, depth: int = 0) -> None:
+        if tree["leaf"]:
             print(f'{"|   " * depth}Predict: {tree["value"]}')
         else:
             feature = feature_names[tree["feature"]]
@@ -121,15 +124,15 @@ class MyDecisionTreeClassifier:
             if tree["isCategorical"]:
                 # Categorical feature
                 print(f"{'|   ' * depth}If {feature} == {threshold}:")
-                self.print_tree(tree["left"], feature_names, depth + 1)
+                self._print(tree["left"], feature_names, depth + 1)
                 print(f"{'|   ' * depth}Else:")
-                self.print_tree(tree["right"], feature_names, depth + 1)
+                self._print(tree["right"], feature_names, depth + 1)
             else:
                 # Numerical feature
                 print(f"{'|   ' * depth}If {feature} <= {threshold}:")
-                self.print_tree(tree["left"], feature_names, depth + 1)
+                self._print(tree["left"], feature_names, depth + 1)
                 print(f"{'|   ' * depth}Else:")
-                self.print_tree(tree["right"], feature_names, depth + 1)
+                self._print(tree["right"], feature_names, depth + 1)
 
 
 if __name__ == "__main__":
@@ -143,12 +146,14 @@ if __name__ == "__main__":
 
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=42)
 
-    myModel = MyDecisionTreeClassifier(max_depth=10, min_split=20)
+    features = ["Unknown" + str(i) for i in range(1, 11)]
+
+    myModel = MyDecisionTreeClassifier(max_depth=10, min_split=20, feature_names=features)
     myModel.fit(x_train, y_train)
-    myModel.print_tree(feature_names=["Unknown" + str(i) for i in range(1, x_train.shape[1] + 1)])
+    myModel.print()
     y_pred = myModel.predict(x_test)
 
-    print("+---------My model------+")
+    print("\n+--------My model-------+")
     print("Recall: %.3f" % recall_score(y_pred, y_test, average="weighted"))
     print("F1-score: %.3f" % f1_score(y_pred, y_test, average="weighted"))
     print("AUC score: %.3f" % roc_auc_score(label_binarize(y_pred, classes=[0, 1, 2, 3]),
@@ -164,7 +169,7 @@ if __name__ == "__main__":
     model.fit(x_train, y_train)
     y_predic = model.predict(x_test)
 
-    print("\n+----Sklearn model----+")
+    print("\n+-----Sklearn model-----+")
     print("Recall: %.3f" % recall_score(y_predic, y_test, average="weighted"))
     print("F1-score: %.3f" % f1_score(y_predic, y_test, average="weighted"))
     print("AUC score: %.3f" % roc_auc_score(label_binarize(y_predic, classes=[0, 1, 2, 3]),
