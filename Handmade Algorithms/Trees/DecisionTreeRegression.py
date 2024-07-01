@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     features = ["Unknown" + str(i) for i in range(10)]
 
-    myModel = MyDecisionTreeRegressor(max_depth=10, min_split=20, feature_names=features)
+    myModel = MyDecisionTreeRegressor(max_depth=10, min_split=7, feature_names=features)
     myModel.fit(x_train, y_train)
     y_pred = myModel.predict(x_test)
 
@@ -141,7 +141,7 @@ if __name__ == '__main__':
     print("RMSE: %.6f" % np.sqrt(mean_squared_error(y_test, y_pred)))
     print("R-squared: %.6f" % r2_score(y_test, y_pred))
 
-    model = DecisionTreeRegressor(max_depth=10, min_samples_split=20)
+    model = DecisionTreeRegressor(max_depth=10, min_samples_split=7, criterion="squared_error")
     model.fit(x_train, y_train)
     y_predic = model.predict(x_test)
     print("\n+--------Sklearn Model-------+")

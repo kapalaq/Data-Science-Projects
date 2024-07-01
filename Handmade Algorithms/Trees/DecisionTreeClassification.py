@@ -8,13 +8,20 @@ from sklearn.tree import DecisionTreeClassifier
 
 class MyDecisionTreeClassifier:
 
-    def __init__(self, max_depth: int = 5, min_split: int = 2, feature_names: list = None):
-        self.max_depth = max_depth
-        self.min_split = min_split
+    def __init__(self,
+                 max_depth: int = None,
+                 min_samples_split: int = 2,
+                 min_weight_fraction_leaf: float = 0.0,
+                 feature_names: list = None):
+        self.max_depth = np.Inf if max_depth is None else max_depth
+        self.min_split = min_samples_split
+        self.min_weight_fraction_leaf = min_weight_fraction_leaf
         self.feature_names = feature_names
+        self._overall_rows = None
         self._tree = None
 
     def fit(self, x: np.array, y: np.array) -> None:
+        self._overall_rows = x.shape[0]
         self._tree = self._build(x, y)
 
     def predict(self, x: np.array):
@@ -35,14 +42,18 @@ class MyDecisionTreeClassifier:
         max_gain = -1
         split = None
         n_rows, n_features = x.shape
-        if n_features <= 1:
+        if n_rows <= 1:
+            return None
+
+        frac = int(self.min_weight_fraction_leaf * self._overall_rows)
+        if 1 + frac > n_rows - frac:
             return None
 
         curr_impurity = self._gini(y)
 
         for feature in range(n_features):
 
-            for i in range(1, n_rows):
+            for i in range(1 + frac, n_rows - frac):
                 cat = False
                 # Categorical
                 if isinstance(x[i, feature], str) or len(np.unique(x[:, feature])) == 2:
@@ -148,35 +159,41 @@ if __name__ == "__main__":
 
     features = ["Unknown" + str(i) for i in range(1, 11)]
 
-    myModel = MyDecisionTreeClassifier(max_depth=10, min_split=20, feature_names=features)
+    myModel = MyDecisionTreeClassifier(max_depth=None,
+                                       min_samples_split=20,
+                                       min_weight_fraction_leaf=0.01,
+                                       feature_names=features)
     myModel.fit(x_train, y_train)
     myModel.print()
     y_pred = myModel.predict(x_test)
 
     print("\n+--------My model-------+")
-    print("Recall: %.3f" % recall_score(y_pred, y_test, average="weighted"))
-    print("F1-score: %.3f" % f1_score(y_pred, y_test, average="weighted"))
-    print("AUC score: %.3f" % roc_auc_score(label_binarize(y_pred, classes=[0, 1, 2, 3]),
-                                            label_binarize(y_test, classes=[0, 1, 2, 3]),
+    print("Recall: %.3f" % recall_score(y_test, y_pred, average="weighted"))
+    print("F1-score: %.3f" % f1_score(y_test, y_pred, average="weighted"))
+    print("AUC score: %.3f" % roc_auc_score(label_binarize(y_test, classes=[0, 1, 2, 3]),
+                                            label_binarize(y_pred, classes=[0, 1, 2, 3]),
                                             multi_class="ovo"))
-    print("Precision: %.3f" % precision_score(y_pred, y_test, average="weighted"))
+    print("Precision: %.3f" % precision_score(y_test, y_pred, average="weighted"))
     print("Average Precision: %.3f" %
-          average_precision_score(label_binarize(y_pred, classes=[0, 1, 2, 3]),
-                                  label_binarize(y_test, classes=[0, 1, 2, 3]),
+          average_precision_score(label_binarize(y_test, classes=[0, 1, 2, 3]),
+                                  label_binarize(y_pred, classes=[0, 1, 2, 3]),
                                   average="weighted"))
 
-    model = DecisionTreeClassifier(max_depth=10, min_samples_split=20)
+    model = DecisionTreeClassifier(max_depth=10,
+                                   min_samples_split=20,
+                                   min_weight_fraction_leaf=0.01,
+                                   criterion="gini")
     model.fit(x_train, y_train)
     y_predic = model.predict(x_test)
 
     print("\n+-----Sklearn model-----+")
-    print("Recall: %.3f" % recall_score(y_predic, y_test, average="weighted"))
-    print("F1-score: %.3f" % f1_score(y_predic, y_test, average="weighted"))
-    print("AUC score: %.3f" % roc_auc_score(label_binarize(y_predic, classes=[0, 1, 2, 3]),
-                                            label_binarize(y_test, classes=[0, 1, 2, 3]),
+    print("Recall: %.3f" % recall_score(y_test, y_predic, average="weighted"))
+    print("F1-score: %.3f" % f1_score(y_test, y_predic, average="weighted"))
+    print("AUC score: %.3f" % roc_auc_score(label_binarize(y_test, classes=[0, 1, 2, 3]),
+                                            label_binarize(y_predic, classes=[0, 1, 2, 3]),
                                             multi_class="ovo"))
-    print("Precision: %.3f" % precision_score(y_predic, y_test, average="weighted"))
+    print("Precision: %.3f" % precision_score(y_test, y_predic, average="weighted"))
     print("Average Precision: %.3f" %
-          average_precision_score(label_binarize(y_predic, classes=[0, 1, 2, 3]),
-                                  label_binarize(y_test, classes=[0, 1, 2, 3]),
+          average_precision_score(label_binarize(y_test, classes=[0, 1, 2, 3]),
+                                  label_binarize(y_predic, classes=[0, 1, 2, 3]),
                                   average="weighted"))
