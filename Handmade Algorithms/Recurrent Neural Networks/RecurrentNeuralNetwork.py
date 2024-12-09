@@ -114,7 +114,7 @@ if __name__ == '__main__':
 
     my_output, _ = rnn.forward(inputs)
     builtin_output = builtin_rnn.forward(inputs_tensor)
-    print("Target\t|\tByHand\t|\tBuiltin")
+    print("\n\nTarget\t|\tByHand\t|\tBuiltin")
     for x, y, z in zip(targets.tolist(), my_output.tolist(), builtin_output.tolist()):
         print(f"{x[0]:.4f}\t|\t{y[0]:.4f}\t|\t{z[0]:.4f}")
         print("--------+-----------+----------")

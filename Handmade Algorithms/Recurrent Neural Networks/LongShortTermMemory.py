@@ -59,7 +59,7 @@ class MyLSTM:
             short_term *=  percentage_output
 
             # Fully connected layer
-            y = np.dot(self.V, short_term) + self.Vb
+            y = np.dot(self.V, sp.special.softmax(short_term)) + self.Vb
 
             # Record values:
             short_record[t] = short_term.ravel()
@@ -99,7 +99,7 @@ class MyLSTM:
             dg = dlong * i_record[t].reshape(-1, 1) * (1 - g_record[t].reshape(-1, 1) ** 2)
             df = (dlong * long_record[t - 1].reshape(-1, 1) * f_record[t].reshape(-1, 1) * (1 - f_record[t].reshape(-1, 1))) if t > 0 else 0
 
-            # Parametersderivatives
+            # Parameters derivatives
             db4 += do
             dW4 += np.dot(do, x[t].reshape(1, -1))
             dU4 += np.dot(do, short_record[t-1].reshape(1, -1)) if t > 0 else 0
@@ -163,11 +163,11 @@ if __name__ == '__main__':
     # My LSTM
     print("\n+------------+\nMy LSTM Model\n+------------+\n")
     lstm = MyLSTM(input_size, hidden_size, output_size)
-    lstm.train(inputs, targets, epochs=epochs + 2000, learning_rate=0.1)
+    lstm.train(inputs, targets, epochs=epochs + 2000, learning_rate=0.01)
 
     # Built-in LSTM
     builtin_lstm = LSTMModel(input_size, hidden_size, output_size, num_layers=1)
-    optimizer = Adam(builtin_lstm.parameters(), lr=0.1)
+    optimizer = Adam(builtin_lstm.parameters(), lr=0.01)
     criterion = nn.MSELoss()
 
     inputs_tensor = torch.from_numpy(inputs).float()
@@ -185,7 +185,7 @@ if __name__ == '__main__':
 
     my_output, *other = lstm.forward(inputs)
     builtin_output = builtin_lstm.forward(inputs_tensor)
-    print("Target\t|\tByHand\t|\tBuiltin")
+    print("\n\nTarget\t|\tByHand\t|\tBuiltin")
     for x, y, z in zip(targets.tolist(), my_output.tolist(), builtin_output.tolist()):
         print(f"{x[0]:.4f}\t|\t{y[0]:.4f}\t|\t{z[0]:.4f}")
         print("--------+-----------+----------")
