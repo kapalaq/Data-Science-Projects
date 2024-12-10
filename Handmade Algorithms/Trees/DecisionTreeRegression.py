@@ -4,16 +4,19 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.tree import DecisionTreeRegressor
 
+from typing import List, Dict, Tuple, Any
+
 
 class MyDecisionTreeRegressor:
+    _loss_history: List[float] = list()
 
-    def __init__(self, max_depth: int = 5, min_split: int = 2, feature_names: list = None):
+    def __init__(self, max_depth: int = 5, min_split: int = 2, feature_names: List[str] = None):
         self.max_depth = max_depth
         self.min_split = min_split
         self.feature_names = feature_names
         self._tree = None
 
-    def fit(self, x: np.array, y: np.array) -> np.array:
+    def fit(self, x: np.array, y: np.array) -> None:
         self._tree = self._build(x, y)
 
     def predict(self, x: np.array) -> np.array:
@@ -28,7 +31,7 @@ class MyDecisionTreeRegressor:
             return np.Inf
         return np.mean((y - np.mean(y)) ** 2)
 
-    def _best_split(self, x: np.array, y: np.array) -> dict:
+    def _best_split(self, x: np.array, y: np.array) -> Dict[str, Any]:
 
         n_samples, n_features = x.shape
         min_mse = self._mse(y)
@@ -61,9 +64,10 @@ class MyDecisionTreeRegressor:
                              "isCategorical": cat,
                              "left": left,
                              "right": right}
+        self._loss_history.append(min_mse)
         return split
 
-    def _build(self, x: np.array, y: np.array, depth: int = 0) -> dict:
+    def _build(self, x: np.array, y: np.array, depth: int = 0) -> Dict[str, Any]:
         n_samples, n_features = x.shape
 
         if depth >= self.max_depth or n_samples < self.min_split or len(np.unique(y)) == 1:
@@ -99,7 +103,7 @@ class MyDecisionTreeRegressor:
                 else:
                     return self._predict(tree["right"], row)
 
-    def _print(self, tree: dict, feature_names: list, depth: int = 0) -> None:
+    def _print(self, tree: dict, feature_names: List[str], depth: int = 0) -> None:
         if tree["leaf"]:
             print(f'{"|   " * depth}Predict: {tree["value"]}')
         else:
@@ -117,6 +121,9 @@ class MyDecisionTreeRegressor:
                 self._print(tree["left"], feature_names, depth + 1)
                 print(f"{'|   ' * depth}Else:")
                 self._print(tree["right"], feature_names, depth + 1)
+
+    def get_loss_history(self) -> List[float]:
+        return self._loss_history
 
 
 if __name__ == '__main__':
